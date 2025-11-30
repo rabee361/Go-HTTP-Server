@@ -5,6 +5,7 @@ import (
 	"net"
 	"os"
 	"bufio"
+	"strings"
 )
 
 const (
@@ -41,10 +42,20 @@ func main() {
  
 func processClient(conn net.Conn) { 
 	reader := bufio.NewReader(conn)
-	msg_len , err := reader.ReadString('\n')
+	msg , err := reader.ReadString('\n')
 	if err != nil {
 		fmt.Println("Error reading", err.Error())
 	}
-	fmt.Println("Recieved", string(msg_len))
+	request_slice := strings.Split(msg, " / ")
+	fmt.Println("Recieved", string(msg))
+	fmt.Println("Method: ", request_slice[0])
+	fmt.Println("HTTP version: ", request_slice)
+	sendResponse(conn)
 	// conn.Close()
+} 
+
+func sendResponse(conn net.Conn) {
+	response := "HTTP/1.1 200 OK\r\n Content-Type: text/html\r\n\r\n <h1> Hello World </h1>"
+	conn.Write([]byte(response))
+	conn.Close()
 }
