@@ -67,61 +67,53 @@ func extractVersion(msg string) string {
 
 func sendResponse(conn net.Conn, path string) {
 	if path == "/hello" {
-		status := HelloPage(conn)
-		fmt.Println(status)
-	} else if path == "/world"{
-		status := WorldPage(conn)
-		fmt.Println(status)
+		HelloPage(conn)
 	} else {
-		status := Handle404(conn)
-		fmt.Println(status)
+		WorldPage(conn)
 	}
 	conn.Close() 
 }
 
-func HelloPage(conn net.Conn) int {
-	response := "HTTP/1.1 200 OK\r\n Content-Type: text/html\r\n\r\n <h1> " + render("assets/hello.html")
-	_, err := conn.Write([]byte(response))
-	if err != nil {
-		fmt.Println("Error writing", err.Error()) // if write failed
-		os.Exit(1)
-	}
-	return 200
+func HelloPage(conn net.Conn) {
+	 render(conn, "assets/hello.html")
 }
 
-func WorldPage(conn net.Conn) int {
-	response := "HTTP/1.1 200 OK\r\n Content-Type: text/html\r\n\r\n <h1> " + render("assets/world.html")
-	_, err := conn.Write([]byte(response))
-	if err != nil {
-		fmt.Println("Error writing", err.Error()) // if write failed
-		os.Exit(1)
-	}
-	return 200
+func WorldPage(conn net.Conn) {
+	jsonResponse(conn)
 }
 
-func Handle404(conn net.Conn) int {
-	response := "HTTP/1.1 404 OK\r\n Content-Type: text/html"
-	_, err := conn.Write([]byte(response))
-	if err != nil {
-		fmt.Println("Error writing", err.Error()) // if write failed
-		os.Exit(1)
-	}
-	return 404
-}
-
-func render(file_path string) string {
+func extractHTML(file_path string) (string, error) {
     file, err := os.Open(file_path)
     if err != nil {
         fmt.Println("Error opening file:", err)
     }
-    defer file.Close() // Ensure file is closed
+    defer file.Close()
     
-    // Read all content
     content, err := io.ReadAll(file)
     if err != nil {
-        fmt.Println("Error reading file:", err)
-    }
+		fmt.Println("Error reading file:", err)
+	}
     
     text := string(content)
-	return text
+	return text, err
+}
+
+func render(conn net.Conn, file_path string) {
+	html_text, err := extractHTML(file_path)
+	if err != nil {
+		fmt.Println("Error reading file:", err)
+	}
+
+	response := "HTTP/1.1 200 OK\r\n Content-Type: text/html\r\n\r\n " + html_text
+	conn.Write([]byte(response))
+	if err != nil {
+		fmt.Println("Error writing", err.Error())
+		os.Exit(1)
+	}
+}
+
+func jsonResponse(conn net.Conn) {
+	response := "HTTP/1.1 200 OK\r\n Content-Type: application/json\r\n\r\n { 'text': hello }"
+	conn.Write([]byte(response))
+
 }
