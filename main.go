@@ -7,6 +7,8 @@ import (
 	"io"
 	"bufio"
 	"strings"
+	"github.com/fsnotify/fsnotify"
+	"log"
 )
 
 const (
@@ -17,7 +19,48 @@ const (
 
 
 func main() {
-	
+
+    watcher, err := fsnotify.NewWatcher()
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer watcher.Close()
+
+	go func() {
+		for {
+			select {
+				case event, ok := <-watcher.Events:
+					if !ok {
+						return
+					}
+					log.Println("event:", event)
+					if event.Has(fsnotify.Write) {
+						startServer()
+						log.Println("modified file:", event.Name)
+					}
+				case err, ok := <-watcher.Errors:
+					if !ok {
+						return
+					}
+					log.Println("error:", err)
+			}
+		}
+	}()
+
+    // Add a path.
+    err = watcher.Add("assets")
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    // Block main goroutine forever.
+    <-make(chan struct{})
+
+}
+
+ 
+
+func startServer() {
 	server, err := net.Listen(SERVER_TYPE, SERVER_HOST+":"+SERVER_PORT)
 	fmt.Println("Server runnin on port: " , SERVER_PORT)
 	if err != nil {
@@ -33,10 +76,8 @@ func main() {
 		}
 		go processRequest(conn)
 	}
-
 }
 
- 
 func processRequest(conn net.Conn) { 
 	reader := bufio.NewReader(conn)
 	first_line , err := reader.ReadString('\n')
