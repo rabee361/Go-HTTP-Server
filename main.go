@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"io"
 	"bufio"
 	"strings"
 )
@@ -14,9 +15,6 @@ const (
 	SERVER_TYPE = "tcp"
 )
 
-type Request struct {
-
-}
 
 func main() {
 	
@@ -34,28 +32,69 @@ func main() {
 			os.Exit(1)
 		}
 		fmt.Println("client connected")
-		go processClient(conn)
+		go processRequest(conn)
 	}
 
 }
 
  
-func processClient(conn net.Conn) { 
+func processRequest(conn net.Conn) { 
 	reader := bufio.NewReader(conn)
-	msg , err := reader.ReadString('\n')
+	first_line , err := reader.ReadString('\n')
 	if err != nil {
 		fmt.Println("Error reading", err.Error())
+	} else {
+		method := extractMethod(first_line)
+		path := extractPath(first_line)
+		version := extractVersion(first_line)
+		fmt.Println("Method: ", method)
+		fmt.Println("path", path)
+		fmt.Println("HTTP version: ", version)
+		sendResponse(conn, path)
 	}
-	request_slice := strings.Split(msg, " / ")
-	fmt.Println("Recieved", string(msg))
-	fmt.Println("Method: ", request_slice[0])
-	fmt.Println("HTTP version: ", request_slice)
-	sendResponse(conn)
-	// conn.Close()
 } 
 
-func sendResponse(conn net.Conn) {
-	response := "HTTP/1.1 200 OK\r\n Content-Type: text/html\r\n\r\n <h1> Hello World </h1>"
-	conn.Write([]byte(response))
-	conn.Close()
+func extractMethod(msg string) string {
+	return strings.Split(msg, " ")[0]
+}
+
+func extractPath(msg string) string {
+	return strings.Split(msg, " ")[1]
+}
+
+func extractVersion(msg string) string {
+	return strings.Split(msg, " ")[2]
+}
+
+func sendResponse(conn net.Conn, path string) {
+
+
+    // Open the file
+    file, err := os.Open("assets/hello.html")
+    if err != nil {
+        fmt.Println("Error opening file:", err)
+        return
+    }
+    defer file.Close() // Ensure file is closed
+    
+    // Read all content
+    content, err := io.ReadAll(file)
+    if err != nil {
+        fmt.Println("Error reading file:", err)
+        return
+    }
+    
+    text := string(content)
+
+
+
+	if path == "/hello" {
+		response := "HTTP/1.1 200 OK\r\n Content-Type: text/html\r\n\r\n <h1> " + text + " </h1>"
+		conn.Write([]byte(response))
+		
+	} else {
+		response := "HTTP/1.1 200 OK\r\n Content-Type: text/html\r\n\r\n <h1> " + text + " </h1>"
+		conn.Write([]byte(response))
+	}
+	conn.Close() 
 }
