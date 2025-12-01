@@ -68,12 +68,22 @@ func extractVersion(msg string) string {
 
 func sendResponse(conn net.Conn, path string) {
 
+	if path == "/hello" {
+		response := "HTTP/1.1 200 OK\r\n Content-Type: text/html\r\n\r\n <h1> " + render("assets/hello.html") + " </h1>"
+		conn.Write([]byte(response))
+		
+	} else {
+		response := "HTTP/1.1 200 OK\r\n Content-Type: text/html\r\n\r\n <h1> " + render("assets/world.html") + " </h1>"
+		conn.Write([]byte(response))
+	}
+	conn.Close() 
+}
 
-    // Open the file
-    file, err := os.Open("assets/hello.html")
+
+func render(file_path string) string {
+    file, err := os.Open(file_path)
     if err != nil {
         fmt.Println("Error opening file:", err)
-        return
     }
     defer file.Close() // Ensure file is closed
     
@@ -81,20 +91,8 @@ func sendResponse(conn net.Conn, path string) {
     content, err := io.ReadAll(file)
     if err != nil {
         fmt.Println("Error reading file:", err)
-        return
     }
     
     text := string(content)
-
-
-
-	if path == "/hello" {
-		response := "HTTP/1.1 200 OK\r\n Content-Type: text/html\r\n\r\n <h1> " + text + " </h1>"
-		conn.Write([]byte(response))
-		
-	} else {
-		response := "HTTP/1.1 200 OK\r\n Content-Type: text/html\r\n\r\n <h1> " + text + " </h1>"
-		conn.Write([]byte(response))
-	}
-	conn.Close() 
+	return text
 }
