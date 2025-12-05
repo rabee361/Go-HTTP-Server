@@ -16,7 +16,7 @@ type Request struct {
 	RequestLine RequestLine
 }
 
-var ErrBadStartLine = fmt.Errorf("bad start line")
+var ERRORBAD_START_LINE = fmt.Errorf("bad start line")
 var SEPARATOR = "\r\n"
 
 func parseRequestLine(b string) (*RequestLine, string, error) {
@@ -29,18 +29,18 @@ func parseRequestLine(b string) (*RequestLine, string, error) {
 
 	parts := strings.Split(startLine, " ")
 	if len(parts) != 3 {
-		return nil, restOfMsg, ErrBadStartLine
+		return nil, restOfMsg, ERRORBAD_START_LINE
 	}
 
 	httpParts := strings.Split(parts[2], "/")
 	if len(httpParts) != 2 || httpParts[0] != "HTTP" || httpParts[1] != "1.1" {
-		return nil, restOfMsg, ErrBadStartLine
+		return nil, restOfMsg, ERRORBAD_START_LINE
 	}
 
 	rl := &RequestLine{
 		Method:        parts[0],
 		RequestTarget: parts[1],
-		HttpVersion:   parts[2],
+		HttpVersion:   httpParts[1],
 	}
 
 	return rl, restOfMsg, nil
